@@ -1,132 +1,14 @@
-import os
 import uuid
 import json
-import requests
 from typing import List, Dict, Optional
 
 import aiosqlite
 
-
-DIFFICULTY_HINTS = {
-    "beginner": "Ask foundational questions. Test understanding of core principles.",
-    "intermediate": "Mix conceptual and applied questions.",
-    "advanced": "Ask deep technical questions requiring expert knowledge.",
-}
-
-APTITUDE_PROMPT = """You are an expert technical interviewer.
-Generate exactly {count} aptitude and logical reasoning interview questions for a {role} candidate.
-Candidate skills: {skills}
-Difficulty: {level_hint}
-
-Focus on: logical reasoning, algorithmic thinking, estimation, pattern recognition relevant to {role}.
-Return ONLY a valid JSON array, no other text:
-[{{"id": 1, "question": "...", "topic": "Logical Reasoning"}}, ...]
-"""
-
-HR_PROMPT = """You are an expert HR interviewer.
-Generate exactly {count} behavioral interview questions for a {role} candidate at {level} level.
-
-Focus on: teamwork, conflict resolution, motivation, growth mindset, communication.
-Use STAR-method appropriate situations.
-Return ONLY a valid JSON array, no other text:
-[{{"id": 1, "question": "...", "topic": "Behavioral"}}, ...]
-"""
-
-
-def _call_openrouter(prompt: str, timeout: int = 30) -> str:
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}"},
-        json={
-            "model": "anthropic/claude-3-haiku",
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=timeout,
-    )
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"].strip()
-
-
-def _parse_question_json(content: str) -> List[Dict]:
-    start = content.find("[")
-    end = content.rfind("]") + 1
-    if start != -1 and end > start:
-        content = content[start:end]
-    return json.loads(content)
-
-
-def _generate_aptitude_questions(
-    skills: List[str], role: str, experience_level: str, count: int = 2
-) -> List[Dict]:
-    level_hint = DIFFICULTY_HINTS.get(experience_level, DIFFICULTY_HINTS["intermediate"])
-    prompt = APTITUDE_PROMPT.format(
-        count=count,
-        role=role,
-        skills=", ".join(skills[:8]),
-        level_hint=level_hint,
-    )
-    try:
-        content = _call_openrouter(prompt)
-        qs = _parse_question_json(content)
-        return [
-            {
-                "question": str(q["question"]),
-                "topic": str(q.get("topic", "Aptitude")),
-                "round": "aptitude",
-                "source_chunks": [],
-            }
-            for q in qs[:count]
-        ]
-    except Exception as e:
-        print(f"Aptitude question generation failed ({e}), using fallbacks")
-        return [
-            {
-                "question": f"How would you approach diagnosing a performance bottleneck in a large-scale {role} system?",
-                "topic": "Problem Solving",
-                "round": "aptitude",
-                "source_chunks": [],
-            },
-            {
-                "question": "Given a sorted array of 1 million integers, compare binary search vs linear search in terms of time complexity and when you'd choose each.",
-                "topic": "Algorithmic Thinking",
-                "round": "aptitude",
-                "source_chunks": [],
-            },
-        ][:count]
-
-
-def _generate_hr_questions(
-    role: str, experience_level: str, count: int = 2
-) -> List[Dict]:
-    prompt = HR_PROMPT.format(count=count, role=role, level=experience_level)
-    try:
-        content = _call_openrouter(prompt)
-        qs = _parse_question_json(content)
-        return [
-            {
-                "question": str(q["question"]),
-                "topic": str(q.get("topic", "Behavioral")),
-                "round": "hr",
-                "source_chunks": [],
-            }
-            for q in qs[:count]
-        ]
-    except Exception as e:
-        print(f"HR question generation failed ({e}), using fallbacks")
-        return [
-            {
-                "question": "Tell me about a time you had to collaborate with a difficult team member. How did you handle it?",
-                "topic": "Teamwork",
-                "round": "hr",
-                "source_chunks": [],
-            },
-            {
-                "question": "Where do you see your career in 3 years, and how does this role align with those goals?",
-                "topic": "Career Goals",
-                "round": "hr",
-                "source_chunks": [],
-            },
-        ][:count]
+from services.round_generator import (
+    generate_aptitude_questions,
+    generate_hr_questions,
+    generate_technical_questions,
+)
 
 
 def assemble_round_questions(
@@ -137,19 +19,14 @@ def assemble_round_questions(
 ) -> List[Dict]:
     """
     Orchestrates question generation across 3 rounds:
-      - 2 aptitude questions
-      - 5 technical questions (RAG-grounded via generate_questions())
-      - 2 HR/behavioral questions
-    Total: 9 questions.
+      - 2  aptitude questions  (pure logical/quantitative reasoning, no RAG)
+      - 6  technical questions (RAG-grounded via Pinecone chunks)
+      - 2  HR questions        (behavioral, skills + role aware, no RAG)
+    Total: 10 questions.
     """
-    from services.question_generator import generate_questions
-
-    aptitude_qs = _generate_aptitude_questions(skills, role, experience_level, count=2)
-
-    technical_raw = generate_questions(skills, role, chunks, experience_level)
-    technical_qs = [{**q, "round": "technical"} for q in technical_raw]
-
-    hr_qs = _generate_hr_questions(role, experience_level, count=2)
+    aptitude_qs  = generate_aptitude_questions(count=2)
+    technical_qs = generate_technical_questions(skills, role, chunks, experience_level, count=6)
+    hr_qs        = generate_hr_questions(skills, role, count=2)
 
     return aptitude_qs + technical_qs + hr_qs
 
@@ -262,7 +139,7 @@ async def save_answer(
         "SELECT COUNT(*) as cnt FROM questions WHERE session_id = ?", (session_id,)
     ) as cursor:
         row = await cursor.fetchone()
-        total = row["cnt"] if row else 9
+        total = row["cnt"] if row else 10
 
     if answers_count >= total:
         await db.execute(
