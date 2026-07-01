@@ -1,0 +1,21 @@
+Extend the interview system to support multiple roles and a round-based structure, without breaking any existing functionality.
+
+1. In the frontend role selector (artifacts/interview-app/src/pages/upload.tsx), expand the role options from 2 to 5: "AI/ML Engineer", "Backend Engineer", "Data Scientist", "Full-Stack Engineer", "DevOps Engineer".
+
+2. In backend/database/db.py, add a "round" column (TEXT, default 'technical') to the questions table using the existing safe-column-add pattern already used for other columns. Valid values will be: 'aptitude', 'technical', 'hr'.
+
+3. In backend/services/session_manager.py, restructure create_session() so that instead of generating 5 flat questions, it generates questions across 3 rounds:
+   - 2 aptitude questions
+   - 6 technical questions (using the existing RAG-grounded generate_questions() pipeline, unchanged)
+   - 2 HR/behavioral questions
+   Each question gets tagged with its round in the new "round" column. Keep the existing generate_questions() function signature and RAG logic completely untouched for the technical round — only add new logic for aptitude and HR rounds around it.
+
+4. Update backend/models/schemas.py so the InterviewQuestion model includes a "round" field.
+
+5. In the frontend interview.tsx page, group and display questions by round with a clear section header (e.g. "Aptitude Round", "Technical Round", "HR Round"), progressing through them in that order — aptitude first, then technical, then HR.
+
+6. Update the summary page to show a per-round breakdown (e.g. score/completion per round) alongside the existing overall summary.
+
+Do not touch rag_service.py, question_generator.py's RAG logic, or the ingestion pipeline — those are working and must not change. This is additive only.
+
+After this, run the app and confirm a full session still completes end-to-end with the new round structure, and that GET /api/session/{id} still returns correctly for old sessions created before this change (round should default gracefully for them).

@@ -23,6 +23,12 @@ const DIFF_BADGE: Record<string, { label: string; bg: string; color: string; bor
   advanced:     { label: "Expert",       bg: "rgba(124,58,237,0.15)", color: "#a78bfa", border: "rgba(124,58,237,0.3)" },
 };
 
+const ROUND_CONFIG: Record<string, { label: string; subtitle: string; color: string; border: string; bg: string }> = {
+  aptitude:  { label: "Aptitude Round",  subtitle: "Logical & Analytical Thinking",    color: "#fbbf24", border: "rgba(217,119,6,0.35)",   bg: "rgba(217,119,6,0.07)"   },
+  technical: { label: "Technical Round", subtitle: "Domain Knowledge & Engineering",   color: "#22d3ee", border: "rgba(8,145,178,0.35)",   bg: "rgba(8,145,178,0.07)"   },
+  hr:        { label: "HR Round",        subtitle: "Behavioral & Culture Fit",         color: "#a78bfa", border: "rgba(124,58,237,0.35)",  bg: "rgba(124,58,237,0.07)"  },
+};
+
 function scoreColor(score: number) {
   if (score <= 4) return { text: "#f87171", ring: "#ef4444", glow: "rgba(239,68,68,0.25)" };
   if (score <= 6) return { text: "#fbbf24", ring: "#f59e0b", glow: "rgba(245,158,11,0.25)" };
@@ -371,6 +377,33 @@ export default function InterviewPage() {
             })}
           </div>
         )}
+
+        {/* Round header */}
+        {(() => {
+          const round = (currentQuestion as any)?.round ?? "technical";
+          const cfg = ROUND_CONFIG[round] ?? ROUND_CONFIG.technical;
+          const prevRound = currentIndex > 0 ? ((session.questions[currentIndex - 1] as any)?.round ?? "technical") : null;
+          const isRoundStart = currentIndex === 0 || prevRound !== round;
+          return (
+            <div
+              className="flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-300"
+              style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}
+            >
+              <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: cfg.color }}>{cfg.label}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{cfg.subtitle}</p>
+              </div>
+              {isRoundStart && currentIndex > 0 && (
+                <span
+                  className="text-xs px-2.5 py-1 rounded-full font-semibold animate-pulse"
+                  style={{ background: cfg.border, color: cfg.color }}
+                >
+                  New Round
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Question card */}
         <div

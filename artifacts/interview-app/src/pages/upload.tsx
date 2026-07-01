@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useStartSession } from "@workspace/api-client-react";
-import { Bot, Server, UploadCloud, FileText, Check, X, Lightbulb, Loader2 } from "lucide-react";
+import { Bot, Server, UploadCloud, FileText, Check, X, Lightbulb, Loader2, BarChart2, Layers, GitBranch } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
@@ -199,7 +199,7 @@ export default function UploadPage() {
                   "Your resume is parsed for skills and technologies",
                   "Experience level is auto-detected from your background",
                   "We query 1,214 ML knowledge vectors in Pinecone",
-                  "Claude AI generates 5 questions tailored to your level",
+                  "Claude AI generates questions across 3 rounds: Aptitude, Technical, HR",
                   "Your answers are scored and stored for final analysis",
                 ].map((step, i) => (
                   <div key={step} className="flex gap-4">
@@ -230,8 +230,11 @@ export default function UploadPage() {
               <label className="text-sm font-medium text-zinc-400 mb-3 block uppercase tracking-wider">Target Role</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { value: "AI/ML Engineer", icon: Bot, desc: "Neural networks, ML algorithms, model deployment" },
-                  { value: "Backend Engineer", icon: Server, desc: "APIs, databases, system design, architecture" },
+                  { value: "AI/ML Engineer",       icon: Bot,       desc: "Neural networks, ML algorithms, model deployment" },
+                  { value: "Backend Engineer",      icon: Server,    desc: "APIs, databases, system design, architecture" },
+                  { value: "Data Scientist",        icon: BarChart2, desc: "Statistical analysis, modeling, data pipelines" },
+                  { value: "Full-Stack Engineer",   icon: Layers,    desc: "Frontend, backend, databases, end-to-end systems" },
+                  { value: "DevOps Engineer",       icon: GitBranch, desc: "CI/CD, infrastructure, cloud, reliability" },
                 ].map(({ value, icon: Icon, desc }) => (
                   <button
                     key={value}

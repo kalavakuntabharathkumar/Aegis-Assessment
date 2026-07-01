@@ -11,6 +11,7 @@ class InterviewQuestion(BaseModel):
     id: int
     question: str
     topic: str
+    round: str = "technical"
     source_chunks: Optional[List[ChunkSource]] = None
 
 
@@ -57,6 +58,7 @@ class QuestionAnswer(BaseModel):
     question_id: int
     question: str
     topic: str
+    round: str = "technical"
     answer: Optional[str]
     answered: bool
     score: Optional[int] = None
@@ -76,6 +78,7 @@ class InterviewSummary(BaseModel):
     total_questions: int
     answered_count: int
     experience_level: str
+    round_breakdown: Optional[dict] = None
 
 
 class ErrorResponse(BaseModel):

@@ -218,6 +218,60 @@ export default function SummaryPage() {
           )}
         </div>
 
+        {/* Per-round breakdown */}
+        {(() => {
+          const breakdown = (summary as any).round_breakdown as Record<string, { total: number; answered: number; avg_score: number | null }> | undefined;
+          if (!breakdown || Object.keys(breakdown).length === 0) return null;
+
+          const ROUND_META: Record<string, { label: string; color: string; border: string; bg: string }> = {
+            aptitude:  { label: "Aptitude Round",  color: "#fbbf24", border: "rgba(217,119,6,0.3)",  bg: "rgba(217,119,6,0.07)"  },
+            technical: { label: "Technical Round", color: "#22d3ee", border: "rgba(8,145,178,0.3)",  bg: "rgba(8,145,178,0.07)"  },
+            hr:        { label: "HR Round",        color: "#a78bfa", border: "rgba(124,58,237,0.3)", bg: "rgba(124,58,237,0.07)" },
+          };
+          const ORDER = ["aptitude", "technical", "hr"];
+          const rounds = ORDER.filter(r => breakdown[r]);
+
+          return (
+            <div className="space-y-4" style={{ animation: "fadeUp 0.6s ease-out 0.25s both" }}>
+              <h2 className="text-2xl font-bold">Round Breakdown</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {rounds.map((round) => {
+                  const meta = ROUND_META[round] ?? ROUND_META.technical;
+                  const data = breakdown[round];
+                  const pct = data.total > 0 ? Math.round((data.answered / data.total) * 100) : 0;
+                  return (
+                    <div
+                      key={round}
+                      className="p-5 rounded-2xl space-y-3"
+                      style={{ background: meta.bg, border: `1px solid ${meta.border}` }}
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wider" style={{ color: meta.color }}>{meta.label}</p>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-2xl font-black text-white">{data.answered}<span className="text-sm text-zinc-500 font-normal">/{data.total}</span></p>
+                          <p className="text-xs text-zinc-500 mt-0.5">answered</p>
+                        </div>
+                        {data.avg_score != null && (
+                          <div className="text-right">
+                            <p className="text-2xl font-black" style={{ color: meta.color }}>{data.avg_score}<span className="text-sm font-normal text-zinc-500">/10</span></p>
+                            <p className="text-xs text-zinc-500 mt-0.5">avg score</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${meta.color}99, ${meta.color})` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Q&A Review */}
         <div className="space-y-4" style={{ animation: "fadeUp 0.6s ease-out 0.3s both" }}>
           <h2 className="text-2xl font-bold">Session Review</h2>

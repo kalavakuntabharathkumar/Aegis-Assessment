@@ -82,6 +82,7 @@ async def get_summary(
             question_id=qa["question_id"],
             question=qa["question"],
             topic=qa["topic"],
+            round=qa.get("round", "technical"),
             answer=qa["answer"],
             answered=qa["answered"],
             score=qa.get("score"),
@@ -103,6 +104,7 @@ async def get_summary(
         total_questions=summary["total_questions"],
         answered_count=summary["answered_count"],
         experience_level=summary.get("experience_level", "intermediate"),
+        round_breakdown=summary.get("round_breakdown"),
     )
 
 

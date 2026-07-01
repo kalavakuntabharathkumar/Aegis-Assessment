@@ -4,8 +4,11 @@ from database.db import get_db
 from models.schemas import SessionStartResponse, SessionDetail, InterviewQuestion
 from services.resume_parser import parse_resume, detect_experience_level
 from services.rag_service import retrieve_relevant_chunks
-from services.question_generator import generate_questions
-from services.session_manager import create_session, get_session as fetch_session
+from services.session_manager import (
+    create_session,
+    get_session as fetch_session,
+    assemble_round_questions,
+)
 
 router = APIRouter()
 
@@ -29,7 +32,7 @@ async def start_session(
 
     chunks = retrieve_relevant_chunks(extracted_skills, resume_text)
 
-    raw_questions = generate_questions(extracted_skills, role, chunks, experience_level)
+    raw_questions = assemble_round_questions(extracted_skills, role, chunks, experience_level)
 
     if not raw_questions:
         raise HTTPException(status_code=500, detail="Failed to generate interview questions")
@@ -43,6 +46,7 @@ async def start_session(
             id=q["id"],
             question=q["question"],
             topic=q["topic"],
+            round=q.get("round", "technical"),
             source_chunks=q.get("source_chunks") or None,
         )
         for q in session["questions"]
@@ -73,6 +77,7 @@ async def get_session(
             id=q["id"],
             question=q["question"],
             topic=q["topic"],
+            round=q.get("round", "technical"),
             source_chunks=q.get("source_chunks") or None,
         )
         for q in session["questions"]

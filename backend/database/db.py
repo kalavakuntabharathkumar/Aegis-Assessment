@@ -78,3 +78,10 @@ async def init_db():
             await db.commit()
         except Exception:
             pass
+
+        # Round support: aptitude / technical / hr
+        try:
+            await db.execute("ALTER TABLE questions ADD COLUMN round TEXT DEFAULT 'technical'")
+            await db.commit()
+        except Exception:
+            pass
