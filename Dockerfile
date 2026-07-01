@@ -10,19 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libharfbuzz-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml uv.lock* ./
-RUN pip install --no-cache-dir \
-    fastapi \
-    "uvicorn[standard]" \
-    aiosqlite \
-    pymupdf \
-    python-multipart \
-    pydantic \
-    pinecone \
-    requests \
-    langchain \
-    langchain-openai \
-    huggingface_hub
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir .
 
 COPY backend/ ./backend/
 
