@@ -72,26 +72,6 @@ async def init_db():
         except Exception:
             pass
 
-        # Users table for JWT auth (role-based access control ready)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT UNIQUE NOT NULL,
-                hashed_password TEXT NOT NULL,
-                full_name TEXT DEFAULT '',
-                role TEXT NOT NULL DEFAULT 'candidate',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        await db.commit()
-
-        # Link sessions to users (optional — existing sessions keep user_id NULL)
-        try:
-            await db.execute("ALTER TABLE sessions ADD COLUMN user_id INTEGER REFERENCES users(id)")
-            await db.commit()
-        except Exception:
-            pass
-
         # Traceability: store the RAG chunks used to generate each question
         try:
             await db.execute("ALTER TABLE questions ADD COLUMN source_chunks TEXT")

@@ -10,7 +10,6 @@ from contextlib import asynccontextmanager
 from database.db import init_db
 from routes.session import router as session_router
 from routes.interview import router as interview_router
-from routes.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -42,4 +41,3 @@ async def health_check():
 
 app.include_router(session_router, prefix="/api")
 app.include_router(interview_router, prefix="/api")
-app.include_router(auth_router, prefix="/api")

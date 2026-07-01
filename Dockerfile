@@ -20,8 +20,6 @@ RUN pip install --no-cache-dir \
     pydantic \
     pinecone \
     requests \
-    "python-jose[cryptography]" \
-    "passlib[bcrypt]" \
     langchain \
     langchain-openai \
     huggingface_hub
