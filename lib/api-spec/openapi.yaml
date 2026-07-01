@@ -1,0 +1,351 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: AI-powered interview system API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: session
+    description: Interview session operations
+  - name: interview
+    description: Interview flow operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /session/start:
+    post:
+      operationId: startSession
+      tags: [session]
+      summary: Start a new interview session
+      description: Upload resume PDF and select role to begin interview
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/SessionStart"
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStartResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /session/{session_id}:
+    get:
+      operationId: getSession
+      tags: [session]
+      summary: Get session details
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetail"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /answer:
+    post:
+      operationId: submitAnswer
+      tags: [interview]
+      summary: Submit an answer to a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerInput"
+      responses:
+        "200":
+          description: Answer submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /summary/{session_id}:
+    get:
+      operationId: getSummary
+      tags: [interview]
+      summary: Get interview summary
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Interview summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSummary"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    SessionStart:
+      type: object
+      properties:
+        role:
+          type: string
+          description: Target role (AI/ML Engineer or Backend Engineer)
+        resume:
+          type: string
+          format: binary
+          description: Resume PDF file
+      required:
+        - role
+        - resume
+
+    InterviewQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        topic:
+          type: string
+      required:
+        - id
+        - question
+        - topic
+
+    SessionStartResponse:
+      type: object
+      properties:
+        session_id:
+          type: string
+        candidate_name:
+          type: string
+        role:
+          type: string
+        extracted_skills:
+          type: array
+          items:
+            type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterviewQuestion"
+        total_questions:
+          type: integer
+        experience_level:
+          type: string
+      required:
+        - session_id
+        - candidate_name
+        - role
+        - extracted_skills
+        - questions
+        - total_questions
+        - experience_level
+
+    SessionDetail:
+      type: object
+      properties:
+        session_id:
+          type: string
+        candidate_name:
+          type: string
+        role:
+          type: string
+        extracted_skills:
+          type: array
+          items:
+            type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterviewQuestion"
+        status:
+          type: string
+        answers_count:
+          type: integer
+        total_questions:
+          type: integer
+        experience_level:
+          type: string
+      required:
+        - session_id
+        - candidate_name
+        - role
+        - extracted_skills
+        - questions
+        - status
+        - answers_count
+        - total_questions
+        - experience_level
+
+    AnswerInput:
+      type: object
+      properties:
+        session_id:
+          type: string
+        question_id:
+          type: integer
+        answer:
+          type: string
+      required:
+        - session_id
+        - question_id
+        - answer
+
+    AnswerResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        next_question_index:
+          type: integer
+        is_complete:
+          type: boolean
+        message:
+          type: string
+        score:
+          type: ["integer", "null"]
+        feedback:
+          type: ["string", "null"]
+        strength:
+          type: ["string", "null"]
+        improvement:
+          type: ["string", "null"]
+      required:
+        - success
+        - next_question_index
+        - is_complete
+        - message
+
+    QuestionAnswer:
+      type: object
+      properties:
+        question_id:
+          type: integer
+        question:
+          type: string
+        topic:
+          type: string
+        answer:
+          type: ["string", "null"]
+        answered:
+          type: boolean
+        score:
+          type: ["integer", "null"]
+        feedback:
+          type: ["string", "null"]
+        strength:
+          type: ["string", "null"]
+        improvement:
+          type: ["string", "null"]
+      required:
+        - question_id
+        - question
+        - topic
+        - answer
+        - answered
+
+    InterviewSummary:
+      type: object
+      properties:
+        session_id:
+          type: string
+        candidate_name:
+          type: string
+        role:
+          type: string
+        extracted_skills:
+          type: array
+          items:
+            type: string
+        qa_pairs:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionAnswer"
+        topics_covered:
+          type: array
+          items:
+            type: string
+        completion_status:
+          type: string
+        total_questions:
+          type: integer
+        answered_count:
+          type: integer
+        experience_level:
+          type: string
+      required:
+        - session_id
+        - candidate_name
+        - role
+        - extracted_skills
+        - qa_pairs
+        - topics_covered
+        - completion_status
+        - total_questions
+        - answered_count
+        - experience_level
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
